@@ -15,8 +15,8 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-      - name: Build sigefrota-core
-        working-directory: ./sigefrota-core
+      - name: Build frota-core
+        working-directory: ./frota-core
         run: ./mvnw -B compile
 
   build-notification:
@@ -27,6 +27,6 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-      - name: Build sigefrota-notification
-        working-directory: ./sigefrota-notification
+      - name: Build frota-notification
+        working-directory: ./frota-notification
         run: ./mvnw -B compile
