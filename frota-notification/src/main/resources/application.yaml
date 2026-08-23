@@ -1,3 +1,35 @@
+server:
+  port: 8081
+
 spring:
   application:
-    name: frota-notification
+    name: sigefrota-notification
+
+  docker:
+    compose:
+      file: ../docker-compose.yml
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+
+  kafka:
+    bootstrap-servers: localhost:9092
+
+  mail:
+    host: localhost
+    port: 1025
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
