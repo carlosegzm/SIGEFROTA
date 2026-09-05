@@ -37,6 +37,9 @@ public class Driver {
     @Column(nullable = false)
     private String phone;
 
+    @Column(nullable = false)
+    private boolean active;
+
     @ManyToMany
     @JoinTable(
             name = "driver_vehicle",
