@@ -12,6 +12,7 @@ public record DriverResponse(
         String licenseNumber,
         String licenseCategory,
         LocalDate licenseExpiration,
-        String phone
+        String phone,
+        Boolean active
 ) {
 }

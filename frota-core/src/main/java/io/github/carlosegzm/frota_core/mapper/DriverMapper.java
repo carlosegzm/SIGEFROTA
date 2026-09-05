@@ -26,6 +26,7 @@ public class DriverMapper {
                 .licenseCategory(driver.getLicenseCategory())
                 .licenseExpiration(driver.getLicenseExpiration())
                 .phone(driver.getPhone())
+                .active(driver.isActive())
                 .build();
     }
 
