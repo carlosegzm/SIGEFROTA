@@ -15,9 +15,9 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-      - name: Build frota-core
+      - name: Test frota-core
         working-directory: ./frota-core
-        run: ./mvnw -B compile
+        run: ./mvnw -B test
 
   build-notification:
     runs-on: ubuntu-latest
@@ -27,6 +27,6 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-      - name: Build frota-notification
+      - name: Test frota-notification
         working-directory: ./frota-notification
-        run: ./mvnw -B compile
+        run: ./mvnw -B test
