@@ -25,14 +25,20 @@ public class Driver {
     @Column(nullable = false)
     private String name;
 
+    @Column(unique = true, nullable = false)
     private String licenseNumber;
 
+    @Column(nullable = false)
     private String licenseCategory;
 
+    @Column(nullable = false)
     private LocalDate licenseExpiration;
 
     @Column(nullable = false)
     private String phone;
+
+    @Column(nullable = false)
+    private boolean active;
 
     @ManyToMany
     @JoinTable(
