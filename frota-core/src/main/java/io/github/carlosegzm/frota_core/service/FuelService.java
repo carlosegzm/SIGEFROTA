@@ -12,7 +12,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -27,8 +30,23 @@ public class FuelService {
         Vehicle vehicle = vehicleRepository.findById(request.vehicleId())
                 .orElseThrow(() -> new EntityNotFoundException("Vehicle not found with ID: " + request.vehicleId()));
 
+        Optional<Fuel> previousFuel = fuelRepository.findTopByVehicleIdOrderByRefueledAtDesc(request.vehicleId());
+
+        BigDecimal consumption = null;
+
+        if (previousFuel.isPresent()) {
+            int odometerDiff = request.odometerKm() - previousFuel.get().getOdometerKm();
+
+            if (odometerDiff <= 0) {
+                throw new IllegalArgumentException("Current odometer must be greater than the previous odometer");
+            }
+
+            consumption = BigDecimal.valueOf(odometerDiff).divide(request.liters(), 2, RoundingMode.HALF_UP);
+        }
+
         Fuel fuel = FuelMapper.toEntity(request);
         fuel.setVehicle(vehicle);
+        fuel.setConsumptionKmL(consumption);
         Fuel savedFuel = fuelRepository.save(fuel);
         return FuelMapper.toResponse(savedFuel);
     }
