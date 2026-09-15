@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -81,6 +82,89 @@ class FuelServiceTest {
         verify(fuelRepository, never()).save(any());
     }
 
+    @Test
+    @DisplayName("Should calculate consumption when previous fuel exists")
+    void create_shouldCalculateConsumption_whenPreviousFuelExists() {
+        Vehicle vehicle = Vehicle.builder()
+                .id(UUID.randomUUID())
+                .build();
+
+        FuelRequest request = new FuelRequest(
+                vehicle.getId(),
+                LocalDate.of(2026, 8, 1),
+                BigDecimal.valueOf(50),
+                BigDecimal.valueOf(339.5),
+                50500
+        );
+
+        Fuel oldFuel = Fuel.builder()
+                .id(UUID.randomUUID())
+                .vehicle(vehicle)
+                .odometerKm(50000)
+                .build();
+
+        when(vehicleRepository.findById(request.vehicleId())).thenReturn(Optional.of(vehicle));
+        when(fuelRepository.findTopByVehicleIdOrderByRefueledAtDesc(request.vehicleId())).thenReturn(Optional.of(oldFuel));
+        when(fuelRepository.save(any(Fuel.class))).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        FuelResponse response = fuelService.create(request);
+        assertNotNull(response);
+        assertEquals(BigDecimal.valueOf(500).divide(request.liters(), 2, RoundingMode.HALF_UP), response.consumptionKmL());
+        verify(fuelRepository, times(1)).save(any(Fuel.class));
+    }
+
+    @Test
+    @DisplayName("Should leave consumption null when no previous fuel exists")
+    void create_shouldLeaveConsumptionNull_whenNoPreviousFuelExists() {
+        Vehicle vehicle = Vehicle.builder()
+                .id(UUID.randomUUID())
+                .build();
+
+        FuelRequest request = new FuelRequest(
+                vehicle.getId(),
+                LocalDate.of(2026, 8, 1),
+                BigDecimal.valueOf(50),
+                BigDecimal.valueOf(339.5),
+                50500
+        );
+
+        when(vehicleRepository.findById(request.vehicleId())).thenReturn(Optional.of(vehicle));
+        when(fuelRepository.findTopByVehicleIdOrderByRefueledAtDesc(request.vehicleId())).thenReturn(Optional.empty());
+        when(fuelRepository.save(any(Fuel.class))).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        FuelResponse response = fuelService.create(request);
+        assertNotNull(response);
+        assertNull(response.consumptionKmL());
+        verify(fuelRepository, times(1)).save(any(Fuel.class));
+    }
+
+    @Test
+    @DisplayName("Should throw exception when odometer is not greater than previous")
+    void create_shouldThrowException_whenOdometerIsNotGreaterThanPrevious() {
+        Vehicle vehicle = Vehicle.builder()
+                .id(UUID.randomUUID())
+                .build();
+
+        FuelRequest request = new FuelRequest(
+                vehicle.getId(),
+                LocalDate.of(2026, 8, 1),
+                BigDecimal.valueOf(50),
+                BigDecimal.valueOf(339.5),
+                50000
+        );
+
+        Fuel oldFuel = Fuel.builder()
+                .id(UUID.randomUUID())
+                .vehicle(vehicle)
+                .odometerKm(50500)
+                .build();
+
+        when(vehicleRepository.findById(request.vehicleId())).thenReturn(Optional.of(vehicle));
+        when(fuelRepository.findTopByVehicleIdOrderByRefueledAtDesc(request.vehicleId())).thenReturn(Optional.of(oldFuel));
+
+        assertThrows(IllegalArgumentException.class, () -> fuelService.create(request));
+        verify(fuelRepository, never()).save(any());
+    }
 
     // -> LIST ALL <-
 
