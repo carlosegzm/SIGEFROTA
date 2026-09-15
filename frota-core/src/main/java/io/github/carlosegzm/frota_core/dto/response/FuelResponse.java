@@ -13,6 +13,7 @@ public record FuelResponse(
         LocalDate refueledAt,
         BigDecimal liters,
         BigDecimal totalCost,
-        Integer odometerKm
+        Integer odometerKm,
+        BigDecimal consumptionKmL
 ) {
 }

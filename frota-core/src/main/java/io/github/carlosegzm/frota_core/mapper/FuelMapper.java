@@ -25,6 +25,7 @@ public class FuelMapper {
                 .liters(fuel.getLiters())
                 .totalCost(fuel.getTotalCost())
                 .odometerKm(fuel.getOdometerKm())
+                .consumptionKmL(fuel.getConsumptionKmL())
                 .build();
     }
 
