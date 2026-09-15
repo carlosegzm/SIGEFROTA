@@ -41,4 +41,6 @@ public class Fuel {
     @Column(nullable = false)
     private Integer odometerKm;
 
+    private BigDecimal consumptionKmL;
+
 }
