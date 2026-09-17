@@ -25,6 +25,9 @@ public class FuelService {
     private final FuelRepository fuelRepository;
     private final VehicleRepository vehicleRepository;
 
+    private static final int MINIMUM_HISTORY_FOR_ANOMALY_CHECK = 3;
+    private static final BigDecimal ANOMALY_THRESHOLD_PERCENT = BigDecimal.valueOf(20);
+
     @Transactional
     public FuelResponse create(FuelRequest request) {
         Vehicle vehicle = vehicleRepository.findById(request.vehicleId())
@@ -33,6 +36,7 @@ public class FuelService {
         Optional<Fuel> previousFuel = fuelRepository.findTopByVehicleIdOrderByRefueledAtDesc(request.vehicleId());
 
         BigDecimal consumption = null;
+        Boolean anomalousConsumption = null;
 
         if (previousFuel.isPresent()) {
             int odometerDiff = request.odometerKm() - previousFuel.get().getOdometerKm();
@@ -42,11 +46,35 @@ public class FuelService {
             }
 
             consumption = BigDecimal.valueOf(odometerDiff).divide(request.liters(), 2, RoundingMode.HALF_UP);
+
+            List<Fuel> lastRefuelings = fuelRepository.findTop10ByVehicleIdOrderByRefueledAtDesc(request.vehicleId());
+            List<Fuel> refuelingsWithConsumption = lastRefuelings.stream()
+                    .filter(fuel -> fuel.getConsumptionKmL() != null)
+                    .toList();
+
+            if (refuelingsWithConsumption.size() >= MINIMUM_HISTORY_FOR_ANOMALY_CHECK) {
+                BigDecimal sum = refuelingsWithConsumption.stream()
+                        .map(Fuel::getConsumptionKmL)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                BigDecimal count = BigDecimal.valueOf(refuelingsWithConsumption.size());
+                BigDecimal averageConsumption = sum.divide(count, 4, RoundingMode.HALF_UP);
+
+                BigDecimal difference = consumption.subtract(averageConsumption).abs();
+                BigDecimal deviationPercentage = difference
+                        .divide(averageConsumption, 4, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(100));
+
+                boolean isAnomalous = deviationPercentage.compareTo(ANOMALY_THRESHOLD_PERCENT) > 0;
+                anomalousConsumption = isAnomalous;
+            }
+
         }
 
         Fuel fuel = FuelMapper.toEntity(request);
         fuel.setVehicle(vehicle);
         fuel.setConsumptionKmL(consumption);
+        fuel.setAnomalousConsumption(anomalousConsumption);
         Fuel savedFuel = fuelRepository.save(fuel);
         return FuelMapper.toResponse(savedFuel);
     }
