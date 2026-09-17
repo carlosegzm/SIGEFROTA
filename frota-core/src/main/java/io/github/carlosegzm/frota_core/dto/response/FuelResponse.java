@@ -14,6 +14,7 @@ public record FuelResponse(
         BigDecimal liters,
         BigDecimal totalCost,
         Integer odometerKm,
-        BigDecimal consumptionKmL
+        BigDecimal consumptionKmL,
+        Boolean anomalousConsumption
 ) {
 }

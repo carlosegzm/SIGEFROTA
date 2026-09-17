@@ -44,4 +44,6 @@ public class Fuel {
     @Column(name = "consumption_km_l")
     private BigDecimal consumptionKmL;
 
+    private Boolean anomalousConsumption;
+
 }
