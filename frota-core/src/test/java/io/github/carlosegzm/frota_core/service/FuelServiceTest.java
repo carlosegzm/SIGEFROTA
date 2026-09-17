@@ -166,6 +166,110 @@ class FuelServiceTest {
         verify(fuelRepository, never()).save(any());
     }
 
+    @Test
+    @DisplayName("Should mark as anomalous when deviation exceeds threshold")
+    void create_shouldMarkAsAnomalous_whenDeviationExceedsThreshold() {
+        Vehicle vehicle = Vehicle.builder()
+                .id(UUID.randomUUID())
+                .build();
+
+        FuelRequest request = new FuelRequest(
+                vehicle.getId(),
+                LocalDate.of(2026, 9, 1),
+                BigDecimal.valueOf(50),
+                BigDecimal.valueOf(350),
+                51000
+        );
+
+        Fuel previousFuel = Fuel.builder()
+                .id(UUID.randomUUID())
+                .odometerKm(50000)
+                .build();
+
+        Fuel historical1 = Fuel.builder().id(UUID.randomUUID()).consumptionKmL(BigDecimal.valueOf(10.0)).build();
+        Fuel historical2 = Fuel.builder().id(UUID.randomUUID()).consumptionKmL(BigDecimal.valueOf(10.5)).build();
+        Fuel historical3 = Fuel.builder().id(UUID.randomUUID()).consumptionKmL(BigDecimal.valueOf(9.5)).build();
+
+        when(vehicleRepository.findById(request.vehicleId())).thenReturn(Optional.of(vehicle));
+        when(fuelRepository.findTopByVehicleIdOrderByRefueledAtDesc(request.vehicleId())).thenReturn(Optional.of(previousFuel));
+        when(fuelRepository.findTop10ByVehicleIdOrderByRefueledAtDesc(request.vehicleId())).thenReturn(List.of(historical1, historical2, historical3));
+        when(fuelRepository.save(any(Fuel.class))).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        FuelResponse response = fuelService.create(request);
+
+        assertEquals(BigDecimal.valueOf(20.00).setScale(2), response.consumptionKmL());
+        assertTrue(response.anomalousConsumption());
+    }
+
+    @Test
+    @DisplayName("Should not mark as anomalous when deviation is within threshold")
+    void create_shouldNotMarkAsAnomalous_whenDeviationIsWithinThreshold() {
+        Vehicle vehicle = Vehicle.builder()
+                .id(UUID.randomUUID())
+                .build();
+
+        FuelRequest request = new FuelRequest(
+                vehicle.getId(),
+                LocalDate.of(2026, 9, 1),
+                BigDecimal.valueOf(50),
+                BigDecimal.valueOf(350),
+                50525
+        );
+
+        Fuel previousFuel = Fuel.builder()
+                .id(UUID.randomUUID())
+                .odometerKm(50000)
+                .build();
+
+        Fuel historical1 = Fuel.builder().id(UUID.randomUUID()).consumptionKmL(BigDecimal.valueOf(10.0)).build();
+        Fuel historical2 = Fuel.builder().id(UUID.randomUUID()).consumptionKmL(BigDecimal.valueOf(10.5)).build();
+        Fuel historical3 = Fuel.builder().id(UUID.randomUUID()).consumptionKmL(BigDecimal.valueOf(9.5)).build();
+
+        when(vehicleRepository.findById(request.vehicleId())).thenReturn(Optional.of(vehicle));
+        when(fuelRepository.findTopByVehicleIdOrderByRefueledAtDesc(request.vehicleId())).thenReturn(Optional.of(previousFuel));
+        when(fuelRepository.findTop10ByVehicleIdOrderByRefueledAtDesc(request.vehicleId())).thenReturn(List.of(historical1, historical2, historical3));
+        when(fuelRepository.save(any(Fuel.class))).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        FuelResponse response = fuelService.create(request);
+
+        assertEquals(BigDecimal.valueOf(10.50).setScale(2), response.consumptionKmL());
+        assertFalse(response.anomalousConsumption());
+    }
+
+    @Test
+    @DisplayName("Should leave anomalousConsumption null when history is insufficient")
+    void create_shouldLeaveAnomalousConsumptionNull_whenHistoryIsInsufficient() {
+        Vehicle vehicle = Vehicle.builder()
+                .id(UUID.randomUUID())
+                .build();
+
+        FuelRequest request = new FuelRequest(
+                vehicle.getId(),
+                LocalDate.of(2026, 9, 1),
+                BigDecimal.valueOf(50),
+                BigDecimal.valueOf(350),
+                50525
+        );
+
+        Fuel previousFuel = Fuel.builder()
+                .id(UUID.randomUUID())
+                .odometerKm(50000)
+                .build();
+
+        Fuel historical1 = Fuel.builder().id(UUID.randomUUID()).consumptionKmL(BigDecimal.valueOf(10.0)).build();
+        Fuel historical2 = Fuel.builder().id(UUID.randomUUID()).consumptionKmL(BigDecimal.valueOf(10.5)).build();
+
+        when(vehicleRepository.findById(request.vehicleId())).thenReturn(Optional.of(vehicle));
+        when(fuelRepository.findTopByVehicleIdOrderByRefueledAtDesc(request.vehicleId())).thenReturn(Optional.of(previousFuel));
+        when(fuelRepository.findTop10ByVehicleIdOrderByRefueledAtDesc(request.vehicleId())).thenReturn(List.of(historical1, historical2));
+        when(fuelRepository.save(any(Fuel.class))).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+
+        FuelResponse response = fuelService.create(request);
+
+        assertEquals(BigDecimal.valueOf(10.50).setScale(2), response.consumptionKmL());
+        assertNull(response.anomalousConsumption());
+    }
+
     // -> LIST ALL <-
 
     @Test
