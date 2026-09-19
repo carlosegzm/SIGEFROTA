@@ -9,6 +9,8 @@ import io.github.carlosegzm.frota_core.repository.FuelRepository;
 import io.github.carlosegzm.frota_core.repository.VehicleRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,7 @@ public class FuelService {
     private static final int MINIMUM_HISTORY_FOR_ANOMALY_CHECK = 3;
     private static final BigDecimal ANOMALY_THRESHOLD_PERCENT = BigDecimal.valueOf(20);
 
+    @CacheEvict(value = "averageConsumption", key = "#request.vehicleId()")
     @Transactional
     public FuelResponse create(FuelRequest request) {
         Vehicle vehicle = vehicleRepository.findById(request.vehicleId())
@@ -47,28 +50,16 @@ public class FuelService {
 
             consumption = BigDecimal.valueOf(odometerDiff).divide(request.liters(), 2, RoundingMode.HALF_UP);
 
-            List<Fuel> lastRefuelings = fuelRepository.findTop10ByVehicleIdOrderByRefueledAtDesc(request.vehicleId());
-            List<Fuel> refuelingsWithConsumption = lastRefuelings.stream()
-                    .filter(fuel -> fuel.getConsumptionKmL() != null)
-                    .toList();
+            BigDecimal averageConsumption = getAverageConsumption(request.vehicleId());
 
-            if (refuelingsWithConsumption.size() >= MINIMUM_HISTORY_FOR_ANOMALY_CHECK) {
-                BigDecimal sum = refuelingsWithConsumption.stream()
-                        .map(Fuel::getConsumptionKmL)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                BigDecimal count = BigDecimal.valueOf(refuelingsWithConsumption.size());
-                BigDecimal averageConsumption = sum.divide(count, 4, RoundingMode.HALF_UP);
-
+            if (averageConsumption != null) {
                 BigDecimal difference = consumption.subtract(averageConsumption).abs();
                 BigDecimal deviationPercentage = difference
                         .divide(averageConsumption, 4, RoundingMode.HALF_UP)
                         .multiply(BigDecimal.valueOf(100));
 
-                boolean isAnomalous = deviationPercentage.compareTo(ANOMALY_THRESHOLD_PERCENT) > 0;
-                anomalousConsumption = isAnomalous;
+                anomalousConsumption = deviationPercentage.compareTo(ANOMALY_THRESHOLD_PERCENT) > 0;
             }
-
         }
 
         Fuel fuel = FuelMapper.toEntity(request);
@@ -91,6 +82,26 @@ public class FuelService {
                 .orElseThrow(() -> new EntityNotFoundException("Fuel not found with ID: " + id));
 
         return FuelMapper.toResponse(fuel);
+    }
+
+    @Cacheable(value = "averageConsumption", key = "#vehicleId")
+    public BigDecimal getAverageConsumption(UUID vehicleId) {
+        List<Fuel> lastRefuelings = fuelRepository.findTop10ByVehicleIdOrderByRefueledAtDesc(vehicleId);
+        List<Fuel> refuelingsWithConsumption = lastRefuelings.stream()
+                .filter(fuel -> fuel.getConsumptionKmL() != null)
+                .toList();
+
+        if (refuelingsWithConsumption.size() < MINIMUM_HISTORY_FOR_ANOMALY_CHECK) {
+            return null;
+        }
+
+        BigDecimal sum = refuelingsWithConsumption.stream()
+                .map(Fuel::getConsumptionKmL)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal count = BigDecimal.valueOf(refuelingsWithConsumption.size());
+        BigDecimal averageConsumption = sum.divide(count, 4, RoundingMode.HALF_UP);
+        return averageConsumption;
     }
 
 

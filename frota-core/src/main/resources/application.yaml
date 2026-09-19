@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: sigefrota-core
+  cache:
+    redis:
+      time-to-live: 600000
 
   docker:
     compose:

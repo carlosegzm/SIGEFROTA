@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,5 +38,10 @@ public class FuelController {
         return ResponseEntity.status(HttpStatus.OK).body(foundFuel);
     }
 
+    @GetMapping("/vehicles/{vehicleId}/average-consumption")
+    public ResponseEntity<BigDecimal> getAverageConsumption(@PathVariable UUID vehicleId) {
+        BigDecimal average = fuelService.getAverageConsumption(vehicleId);
+        return ResponseEntity.status(HttpStatus.OK).body(average);
+    }
 
 }
