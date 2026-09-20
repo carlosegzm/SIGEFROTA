@@ -14,11 +14,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,11 +39,17 @@ class MaintenanceServiceTest {
     @Mock
     private VehicleRepository vehicleRepository;
 
+    @Mock
+    private RedissonClient redissonClient;
+
+    @Mock
+    private RLock rLock;
+
     // -> CREATE <-
 
     @Test
     @DisplayName("Should calculate next due values when vehicle exists")
-    void create_shouldCalculateNextDueValues_whenVehicleExists() {
+    void create_shouldCalculateNextDueValues_whenVehicleExists() throws InterruptedException {
         MaintenanceRequest request = new MaintenanceRequest(
                 UUID.randomUUID(),
                 MaintenanceType.OIL_CHANGE,
@@ -52,6 +61,8 @@ class MaintenanceServiceTest {
                 .id(request.vehicleId())
                 .build();
 
+        when(redissonClient.getLock(anyString())).thenReturn(rLock);
+        when(rLock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
         when(vehicleRepository.findById(request.vehicleId())).thenReturn(Optional.of(vehicle));
         when(maintenanceRepository.save(any(Maintenance.class))).thenAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
@@ -66,7 +77,7 @@ class MaintenanceServiceTest {
 
     @Test
     @DisplayName("Should throw exception when vehicle is not found")
-    void create_shouldThrowException_whenVehicleNotFound() {
+    void create_shouldThrowException_whenVehicleNotFound() throws InterruptedException {
         MaintenanceRequest request = new MaintenanceRequest(
                 UUID.randomUUID(),
                 MaintenanceType.OIL_CHANGE,
@@ -74,6 +85,8 @@ class MaintenanceServiceTest {
                 LocalDate.now()
         );
 
+        when(redissonClient.getLock(anyString())).thenReturn(rLock);
+        when(rLock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
         when(vehicleRepository.findById(request.vehicleId())).thenReturn(Optional.empty());
 
         assertThrows(EntityNotFoundException.class, () -> maintenanceService.create(request));
