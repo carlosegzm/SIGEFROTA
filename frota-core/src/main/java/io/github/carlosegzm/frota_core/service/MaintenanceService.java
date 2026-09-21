@@ -9,11 +9,14 @@ import io.github.carlosegzm.frota_core.repository.MaintenanceRepository;
 import io.github.carlosegzm.frota_core.repository.VehicleRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
 @Service
@@ -21,20 +24,41 @@ public class MaintenanceService {
 
     private final MaintenanceRepository maintenanceRepository;
     private final VehicleRepository vehicleRepository;
+    private final RedissonClient redissonClient;
 
     @Transactional
     public MaintenanceResponse create(MaintenanceRequest request) {
 
-        Vehicle vehicle = vehicleRepository.findById(request.vehicleId())
-                .orElseThrow(() -> new EntityNotFoundException("Vehicle not found with ID:" + request.vehicleId()));
+        String lockKey = "maintenance-lock: " + request.vehicleId();
+        RLock lock = redissonClient.getLock(lockKey);
 
-        Maintenance maintenance = MaintenanceMapper.toEntity(request);
-        maintenance.setVehicle(vehicle);
-        maintenance.setNextDueKm(request.registeredKm() + request.type().getKmInterval());
-        maintenance.setNextDueDate(request.performedAt().plusMonths(request.type().getMonthsInterval()));
+        try {
+            boolean acquired = lock.tryLock(5, 10, TimeUnit.SECONDS);
 
-        Maintenance savedMaintenance = maintenanceRepository.save(maintenance);
-        return MaintenanceMapper.toResponse(savedMaintenance);
+            if (!acquired) {
+                throw new IllegalStateException("This vehicle is currently being processed. Try again shortly");
+            }
+
+            Vehicle vehicle = vehicleRepository.findById(request.vehicleId())
+                    .orElseThrow(() -> new EntityNotFoundException("Vehicle not found with ID:" + request.vehicleId()));
+
+            Maintenance maintenance = MaintenanceMapper.toEntity(request);
+            maintenance.setVehicle(vehicle);
+            maintenance.setNextDueKm(request.registeredKm() + request.type().getKmInterval());
+            maintenance.setNextDueDate(request.performedAt().plusMonths(request.type().getMonthsInterval()));
+
+            Maintenance savedMaintenance = maintenanceRepository.save(maintenance);
+            return MaintenanceMapper.toResponse(savedMaintenance);
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Lock acquisition interrupted", e);
+        } finally {
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
+
     }
 
     public List<MaintenanceResponse> listAll() {
