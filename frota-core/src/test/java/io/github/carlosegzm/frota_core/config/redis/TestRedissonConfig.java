@@ -6,11 +6,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 @Configuration
 @Profile("test")
-class RedissonConfigTest {
+class TestRedissonConfig {
 
     @Bean
     public RedissonClient redissonClient() {
