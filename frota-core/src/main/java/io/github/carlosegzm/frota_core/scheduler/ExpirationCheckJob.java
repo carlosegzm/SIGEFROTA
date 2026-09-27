@@ -2,8 +2,11 @@ package io.github.carlosegzm.frota_core.scheduler;
 
 import io.github.carlosegzm.frota_core.domain.entities.Document;
 import io.github.carlosegzm.frota_core.domain.entities.Maintenance;
+import io.github.carlosegzm.frota_core.domain.enums.AlertType;
+import io.github.carlosegzm.frota_core.dto.message.ExpirationAlertMessage;
 import io.github.carlosegzm.frota_core.repository.DocumentRepository;
 import io.github.carlosegzm.frota_core.repository.MaintenanceRepository;
+import io.github.carlosegzm.frota_core.messaging.ExpirationAlertPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -21,6 +24,7 @@ public class ExpirationCheckJob {
 
     private final MaintenanceRepository maintenanceRepository;
     private final DocumentRepository documentRepository;
+    private final ExpirationAlertPublisher expirationAlertPublisher;
 
     @Scheduled(cron = "0 0 8 * * *")
     public void checkUpcomingExpirations() {
@@ -29,18 +33,27 @@ public class ExpirationCheckJob {
         List<Maintenance> upcomingMaintenances = maintenanceRepository.findByNextDueDateBefore(alertWindow);
         List<Document> upcomingDocuments = documentRepository.findByExpiresAtBefore(alertWindow);
 
-        log.info("Found {} maintenance(s) approaching due date", upcomingMaintenances.size());
-        log.info("Found {} document(s) approaching expiration", upcomingDocuments.size());
+        upcomingMaintenances.forEach(maintenance -> {
+            ExpirationAlertMessage message = new ExpirationAlertMessage(
+                    maintenance.getVehicle().getId(),
+                    maintenance.getVehicle().getPlate(),
+                    AlertType.MAINTENANCE,
+                    "Maintenance due: " + maintenance.getType(),
+                    maintenance.getNextDueDate()
+            );
+            expirationAlertPublisher.publish(message);
+        });
 
-        upcomingMaintenances.forEach(maintenance ->
-                log.info("Maintenance {} for vehicle {} is due on {}",
-                        maintenance.getId(), maintenance.getVehicle().getPlate(), maintenance.getNextDueDate())
-        );
-
-        upcomingDocuments.forEach(document ->
-                log.info("Document {} for vehicle {} expires on {}",
-                        document.getId(), document.getVehicle().getPlate(), document.getExpiresAt())
-        );
+        upcomingDocuments.forEach(document -> {
+            ExpirationAlertMessage message = new ExpirationAlertMessage(
+                    document.getVehicle().getId(),
+                    document.getVehicle().getPlate(),
+                    AlertType.DOCUMENT,
+                    "Document expiring: " + document.getType(),
+                    document.getExpiresAt()
+            );
+            expirationAlertPublisher.publish(message);
+        });
 
     }
 
