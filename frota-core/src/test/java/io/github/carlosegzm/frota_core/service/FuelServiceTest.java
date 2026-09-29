@@ -4,6 +4,7 @@ import io.github.carlosegzm.frota_core.domain.entities.Fuel;
 import io.github.carlosegzm.frota_core.domain.entities.Vehicle;
 import io.github.carlosegzm.frota_core.dto.request.FuelRequest;
 import io.github.carlosegzm.frota_core.dto.response.FuelResponse;
+import io.github.carlosegzm.frota_core.messaging.ExpirationAlertPublisher;
 import io.github.carlosegzm.frota_core.repository.FuelRepository;
 import io.github.carlosegzm.frota_core.repository.VehicleRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -36,6 +37,9 @@ class FuelServiceTest {
 
     @Mock
     private VehicleRepository vehicleRepository;
+
+    @Mock
+    private ExpirationAlertPublisher expirationAlertPublisher;
 
     // -> CREATE <-
 
@@ -199,6 +203,7 @@ class FuelServiceTest {
 
         assertEquals(BigDecimal.valueOf(20.00).setScale(2), response.consumptionKmL());
         assertTrue(response.anomalousConsumption());
+        verify(expirationAlertPublisher, times(1)).publish(any());
     }
 
     @Test
@@ -234,6 +239,7 @@ class FuelServiceTest {
 
         assertEquals(BigDecimal.valueOf(10.50).setScale(2), response.consumptionKmL());
         assertFalse(response.anomalousConsumption());
+        verify(expirationAlertPublisher, never()).publish(any());
     }
 
     @Test
