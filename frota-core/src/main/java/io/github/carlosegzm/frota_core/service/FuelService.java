@@ -2,9 +2,12 @@ package io.github.carlosegzm.frota_core.service;
 
 import io.github.carlosegzm.frota_core.domain.entities.Fuel;
 import io.github.carlosegzm.frota_core.domain.entities.Vehicle;
+import io.github.carlosegzm.frota_core.domain.enums.AlertType;
+import io.github.carlosegzm.frota_core.dto.message.ExpirationAlertMessage;
 import io.github.carlosegzm.frota_core.dto.request.FuelRequest;
 import io.github.carlosegzm.frota_core.dto.response.FuelResponse;
 import io.github.carlosegzm.frota_core.mapper.FuelMapper;
+import io.github.carlosegzm.frota_core.messaging.ExpirationAlertPublisher;
 import io.github.carlosegzm.frota_core.repository.FuelRepository;
 import io.github.carlosegzm.frota_core.repository.VehicleRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -29,6 +32,7 @@ public class FuelService {
 
     private static final int MINIMUM_HISTORY_FOR_ANOMALY_CHECK = 3;
     private static final BigDecimal ANOMALY_THRESHOLD_PERCENT = BigDecimal.valueOf(20);
+    private final ExpirationAlertPublisher expirationAlertPublisher;
 
     @CacheEvict(value = "averageConsumption", key = "#request.vehicleId()")
     @Transactional
@@ -67,6 +71,18 @@ public class FuelService {
         fuel.setConsumptionKmL(consumption);
         fuel.setAnomalousConsumption(anomalousConsumption);
         Fuel savedFuel = fuelRepository.save(fuel);
+
+        if (Boolean.TRUE.equals(anomalousConsumption)) {
+            ExpirationAlertMessage alertMessage = new ExpirationAlertMessage(
+                    vehicle.getId(),
+                    vehicle.getPlate(),
+                    AlertType.FUEL_ANOMALY,
+                    "Anomalous consumption detected: " + consumption + " km/L",
+                    request.refueledAt()
+            );
+            expirationAlertPublisher.publish(alertMessage);
+        }
+
         return FuelMapper.toResponse(savedFuel);
     }
 
