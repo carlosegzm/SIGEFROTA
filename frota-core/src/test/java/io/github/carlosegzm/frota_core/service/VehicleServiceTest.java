@@ -5,6 +5,7 @@ import io.github.carlosegzm.frota_core.domain.enums.VehicleStatus;
 import io.github.carlosegzm.frota_core.dto.request.VehicleRequest;
 import io.github.carlosegzm.frota_core.dto.request.VehicleStatusRequest;
 import io.github.carlosegzm.frota_core.dto.response.VehicleResponse;
+import io.github.carlosegzm.frota_core.messaging.AuditEventPublisher;
 import io.github.carlosegzm.frota_core.repository.VehicleRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
@@ -31,6 +32,9 @@ class VehicleServiceTest {
 
     @Mock
     private VehicleRepository vehicleRepository;
+
+    @Mock
+    private AuditEventPublisher auditEventPublisher;
 
     // -> CREATE <-
 
