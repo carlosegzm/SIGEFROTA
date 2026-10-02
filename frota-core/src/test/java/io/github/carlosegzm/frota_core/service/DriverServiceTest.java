@@ -3,6 +3,7 @@ package io.github.carlosegzm.frota_core.service;
 import io.github.carlosegzm.frota_core.domain.entities.Driver;
 import io.github.carlosegzm.frota_core.dto.request.DriverRequest;
 import io.github.carlosegzm.frota_core.dto.response.DriverResponse;
+import io.github.carlosegzm.frota_core.messaging.AuditEventPublisher;
 import io.github.carlosegzm.frota_core.repository.DriverRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
@@ -29,6 +30,9 @@ class DriverServiceTest {
 
     @Mock
     private DriverRepository driverRepository;
+
+    @Mock
+    private AuditEventPublisher auditEventPublisher;
 
     // -> CREATE <-
 

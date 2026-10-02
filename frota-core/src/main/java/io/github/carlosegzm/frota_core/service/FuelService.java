@@ -3,10 +3,12 @@ package io.github.carlosegzm.frota_core.service;
 import io.github.carlosegzm.frota_core.domain.entities.Fuel;
 import io.github.carlosegzm.frota_core.domain.entities.Vehicle;
 import io.github.carlosegzm.frota_core.domain.enums.AlertType;
+import io.github.carlosegzm.frota_core.dto.message.AuditEvent;
 import io.github.carlosegzm.frota_core.dto.message.ExpirationAlertMessage;
 import io.github.carlosegzm.frota_core.dto.request.FuelRequest;
 import io.github.carlosegzm.frota_core.dto.response.FuelResponse;
 import io.github.carlosegzm.frota_core.mapper.FuelMapper;
+import io.github.carlosegzm.frota_core.messaging.AuditEventPublisher;
 import io.github.carlosegzm.frota_core.messaging.ExpirationAlertPublisher;
 import io.github.carlosegzm.frota_core.repository.FuelRepository;
 import io.github.carlosegzm.frota_core.repository.VehicleRepository;
@@ -19,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,6 +36,7 @@ public class FuelService {
     private static final int MINIMUM_HISTORY_FOR_ANOMALY_CHECK = 3;
     private static final BigDecimal ANOMALY_THRESHOLD_PERCENT = BigDecimal.valueOf(20);
     private final ExpirationAlertPublisher expirationAlertPublisher;
+    private final AuditEventPublisher auditEventPublisher;
 
     @CacheEvict(value = "averageConsumption", key = "#request.vehicleId()")
     @Transactional
@@ -82,6 +86,13 @@ public class FuelService {
             );
             expirationAlertPublisher.publish(alertMessage);
         }
+
+        auditEventPublisher.publish(new AuditEvent(
+                fuel.getId(),
+                "FUEL",
+                "CREATED",
+                Instant.now()
+        ));
 
         return FuelMapper.toResponse(savedFuel);
     }

@@ -1,15 +1,18 @@
 package io.github.carlosegzm.frota_core.service;
 
 import io.github.carlosegzm.frota_core.domain.entities.Driver;
+import io.github.carlosegzm.frota_core.dto.message.AuditEvent;
 import io.github.carlosegzm.frota_core.dto.request.DriverRequest;
 import io.github.carlosegzm.frota_core.dto.response.DriverResponse;
 import io.github.carlosegzm.frota_core.mapper.DriverMapper;
+import io.github.carlosegzm.frota_core.messaging.AuditEventPublisher;
 import io.github.carlosegzm.frota_core.repository.DriverRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,6 +21,7 @@ import java.util.UUID;
 public class DriverService {
 
     private final DriverRepository driverRepository;
+    private final AuditEventPublisher auditEventPublisher;
 
     @Transactional
     public DriverResponse create(DriverRequest request) {
@@ -30,6 +34,14 @@ public class DriverService {
         driver.setActive(true);
 
         Driver newDriver = driverRepository.save(driver);
+
+        auditEventPublisher.publish(new AuditEvent(
+                driver.getId(),
+                "DRIVER",
+                "CREATED",
+                Instant.now()
+        ));
+
         return DriverMapper.toResponse(newDriver);
     }
 
@@ -64,6 +76,14 @@ public class DriverService {
         driver.setPhone(request.phone());
 
         Driver updatedDriver = driverRepository.save(driver);
+
+        auditEventPublisher.publish(new AuditEvent(
+                driver.getId(),
+                "DRIVER",
+                "UPDATED",
+                Instant.now()
+        ));
+
         return DriverMapper.toResponse(updatedDriver);
     }
 
@@ -73,6 +93,14 @@ public class DriverService {
                 .orElseThrow(() -> new EntityNotFoundException("Driver not found with ID: " + id));
 
         driver.setActive(false);
+
+        auditEventPublisher.publish(new AuditEvent(
+                driver.getId(),
+                "VEHICLE",
+                "INACTIVATED",
+                Instant.now()
+        ));
+
         driverRepository.save(driver);
     }
 

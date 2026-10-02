@@ -4,6 +4,7 @@ server:
 spring:
   application:
     name: sigefrota-core
+
   cache:
     redis:
       time-to-live: 600000
@@ -39,6 +40,9 @@ spring:
 
   kafka:
     bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
 jwt:
   secret: ${JWT_SECRET}

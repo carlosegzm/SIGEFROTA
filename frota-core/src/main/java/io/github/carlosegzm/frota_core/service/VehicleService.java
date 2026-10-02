@@ -2,16 +2,19 @@ package io.github.carlosegzm.frota_core.service;
 
 import io.github.carlosegzm.frota_core.domain.entities.Vehicle;
 import io.github.carlosegzm.frota_core.domain.enums.VehicleStatus;
+import io.github.carlosegzm.frota_core.dto.message.AuditEvent;
 import io.github.carlosegzm.frota_core.dto.request.VehicleRequest;
 import io.github.carlosegzm.frota_core.dto.request.VehicleStatusRequest;
 import io.github.carlosegzm.frota_core.dto.response.VehicleResponse;
 import io.github.carlosegzm.frota_core.mapper.VehicleMapper;
+import io.github.carlosegzm.frota_core.messaging.AuditEventPublisher;
 import io.github.carlosegzm.frota_core.repository.VehicleRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,6 +23,7 @@ import java.util.UUID;
 public class VehicleService {
 
     private final VehicleRepository vehicleRepository;
+    private final AuditEventPublisher auditEventPublisher;
 
     @Transactional
     public VehicleResponse create(VehicleRequest request) {
@@ -31,6 +35,14 @@ public class VehicleService {
         vehicle.setStatus(VehicleStatus.ACTIVE);
 
         Vehicle newVehicle = vehicleRepository.save(vehicle);
+
+        auditEventPublisher.publish(new AuditEvent(
+                vehicle.getId(),
+                "VEHICLE",
+                "CREATED",
+                Instant.now()
+        ));
+
         return VehicleMapper.toResponse(newVehicle);
     }
 
@@ -64,6 +76,14 @@ public class VehicleService {
         vehicle.setCurrentKm(request.currentKm());
 
         Vehicle updatedVehicle = vehicleRepository.save(vehicle);
+
+        auditEventPublisher.publish(new AuditEvent(
+                vehicle.getId(),
+                "VEHICLE",
+                "UPDATED",
+                Instant.now()
+        ));
+
         return VehicleMapper.toResponse(updatedVehicle);
     }
 
@@ -74,6 +94,14 @@ public class VehicleService {
 
         vehicle.setStatus(request.status());
         Vehicle updatedVehicle = vehicleRepository.save(vehicle);
+
+        auditEventPublisher.publish(new AuditEvent(
+                vehicle.getId(),
+                "VEHICLE",
+                "STATUS_CHANGED",
+                Instant.now()
+        ));
+
         return VehicleMapper.toResponse(updatedVehicle);
     }
 
@@ -84,6 +112,14 @@ public class VehicleService {
                 .orElseThrow(() -> new EntityNotFoundException("Vehicle not found with ID: " + id));
 
         vehicle.setStatus(VehicleStatus.INACTIVE);
+
+        auditEventPublisher.publish(new AuditEvent(
+                vehicle.getId(),
+                "VEHICLE",
+                "INACTIVATED",
+                Instant.now()
+        ));
+
         vehicleRepository.save(vehicle);
     }
 

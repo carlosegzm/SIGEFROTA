@@ -2,9 +2,11 @@ package io.github.carlosegzm.frota_core.service;
 
 import io.github.carlosegzm.frota_core.domain.entities.Document;
 import io.github.carlosegzm.frota_core.domain.entities.Vehicle;
+import io.github.carlosegzm.frota_core.dto.message.AuditEvent;
 import io.github.carlosegzm.frota_core.dto.request.DocumentRequest;
 import io.github.carlosegzm.frota_core.dto.response.DocumentResponse;
 import io.github.carlosegzm.frota_core.mapper.DocumentMapper;
+import io.github.carlosegzm.frota_core.messaging.AuditEventPublisher;
 import io.github.carlosegzm.frota_core.repository.DocumentRepository;
 import io.github.carlosegzm.frota_core.repository.VehicleRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -12,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,6 +24,7 @@ public class DocumentService {
 
     private final DocumentRepository documentRepository;
     private final VehicleRepository vehicleRepository;
+    private final AuditEventPublisher auditEventPublisher;
 
     @Transactional
     public DocumentResponse create(DocumentRequest request) {
@@ -32,6 +36,14 @@ public class DocumentService {
         document.setVehicle(vehicle);
 
         Document savedDocument = documentRepository.save(document);
+
+        auditEventPublisher.publish(new AuditEvent(
+                document.getId(),
+                "DOCUMENT",
+                "CREATED",
+                Instant.now()
+        ));
+
         return DocumentMapper.toResponse(savedDocument);
     }
 
