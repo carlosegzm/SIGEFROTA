@@ -4,6 +4,7 @@ import io.github.carlosegzm.frota_core.domain.entities.Fuel;
 import io.github.carlosegzm.frota_core.domain.entities.Vehicle;
 import io.github.carlosegzm.frota_core.dto.request.FuelRequest;
 import io.github.carlosegzm.frota_core.dto.response.FuelResponse;
+import io.github.carlosegzm.frota_core.messaging.AuditEventPublisher;
 import io.github.carlosegzm.frota_core.messaging.ExpirationAlertPublisher;
 import io.github.carlosegzm.frota_core.repository.FuelRepository;
 import io.github.carlosegzm.frota_core.repository.VehicleRepository;
@@ -40,6 +41,9 @@ class FuelServiceTest {
 
     @Mock
     private ExpirationAlertPublisher expirationAlertPublisher;
+
+    @Mock
+    private AuditEventPublisher auditEventPublisher;
 
     // -> CREATE <-
 
