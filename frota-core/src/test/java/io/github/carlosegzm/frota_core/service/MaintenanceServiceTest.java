@@ -5,6 +5,7 @@ import io.github.carlosegzm.frota_core.domain.entities.Vehicle;
 import io.github.carlosegzm.frota_core.domain.enums.MaintenanceType;
 import io.github.carlosegzm.frota_core.dto.request.MaintenanceRequest;
 import io.github.carlosegzm.frota_core.dto.response.MaintenanceResponse;
+import io.github.carlosegzm.frota_core.messaging.AuditEventPublisher;
 import io.github.carlosegzm.frota_core.repository.MaintenanceRepository;
 import io.github.carlosegzm.frota_core.repository.VehicleRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -44,6 +45,9 @@ class MaintenanceServiceTest {
 
     @Mock
     private RLock rLock;
+
+    @Mock
+    private AuditEventPublisher auditEventPublisher;
 
     // -> CREATE <-
 
