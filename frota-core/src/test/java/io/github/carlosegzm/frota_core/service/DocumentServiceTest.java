@@ -5,6 +5,7 @@ import io.github.carlosegzm.frota_core.domain.entities.Vehicle;
 import io.github.carlosegzm.frota_core.domain.enums.DocumentType;
 import io.github.carlosegzm.frota_core.dto.request.DocumentRequest;
 import io.github.carlosegzm.frota_core.dto.response.DocumentResponse;
+import io.github.carlosegzm.frota_core.messaging.AuditEventPublisher;
 import io.github.carlosegzm.frota_core.repository.DocumentRepository;
 import io.github.carlosegzm.frota_core.repository.VehicleRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -35,6 +36,9 @@ class DocumentServiceTest {
 
     @Mock
     private VehicleRepository vehicleRepository;
+
+    @Mock
+    private AuditEventPublisher auditEventPublisher;
 
     // -> CREATE <-
 
