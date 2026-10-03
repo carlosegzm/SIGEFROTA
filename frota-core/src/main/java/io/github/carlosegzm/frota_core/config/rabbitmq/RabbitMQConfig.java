@@ -35,7 +35,7 @@ public class RabbitMQConfig {
 
     @Bean
     public JacksonJsonMessageConverter messageConverter() {
-        return new JacksonJsonMessageConverter();
+        return new JacksonJsonMessageConverter("io.github.carlosegzm.frota_core.dto.message");
     }
 
 }
