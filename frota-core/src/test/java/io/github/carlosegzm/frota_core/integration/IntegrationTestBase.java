@@ -6,25 +6,32 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.RabbitMQContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.kafka.KafkaContainer;
 
+import java.time.Duration;
+
 @SpringBootTest
-@Testcontainers
 public abstract class IntegrationTestBase {
 
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
+            .withStartupTimeout(Duration.ofSeconds(120));
 
-    @Container
-    static RabbitMQContainer rabbitMQ = new RabbitMQContainer("rabbitmq:3-management-alpine");
+    static RabbitMQContainer rabbitMQ = new RabbitMQContainer("rabbitmq:3-management-alpine")
+            .withStartupTimeout(Duration.ofSeconds(120));
 
-    @Container
-    static KafkaContainer kafka = new KafkaContainer("apache/kafka:3.8.0");
+    static KafkaContainer kafka = new KafkaContainer("apache/kafka:3.8.0")
+            .withStartupTimeout(Duration.ofSeconds(120));
 
-    @Container
-    static GenericContainer<?> redis = new GenericContainer<>("redis:7-alpine").withExposedPorts(6379);
+    static GenericContainer<?> redis = new GenericContainer<>("redis:7-alpine")
+            .withExposedPorts(6379)
+            .withStartupTimeout(Duration.ofSeconds(120));
+
+    static {
+        postgres.start();
+        rabbitMQ.start();
+        kafka.start();
+        redis.start();
+    }
 
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
