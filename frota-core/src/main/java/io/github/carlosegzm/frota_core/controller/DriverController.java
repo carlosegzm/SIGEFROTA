@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +20,7 @@ public class DriverController {
 
     private final DriverService driverService;
 
+    @PreAuthorize("hasRole('FLEET_MANAGER')")
     @PostMapping
     public ResponseEntity<DriverResponse> create(@RequestBody @Valid DriverRequest request) {
         DriverResponse createdDriver = driverService.create(request);
@@ -38,12 +40,14 @@ public class DriverController {
     }
 
 
+    @PreAuthorize("hasRole('FLEET_MANAGER')")
     @PutMapping("/{id}")
     public ResponseEntity<DriverResponse> update(@PathVariable UUID id, @RequestBody @Valid DriverRequest request) {
         DriverResponse updatedDriver = driverService.update(id, request);
         return ResponseEntity.status(HttpStatus.OK).body(updatedDriver);
     }
 
+    @PreAuthorize("hasRole('FLEET_MANAGER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         driverService.delete(id);
