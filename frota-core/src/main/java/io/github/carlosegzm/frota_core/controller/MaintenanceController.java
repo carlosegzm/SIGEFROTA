@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +20,7 @@ public class MaintenanceController {
 
     private final MaintenanceService maintenanceService;
 
+    @PreAuthorize("hasRole('FLEET_MANAGER')")
     @PostMapping
     public ResponseEntity<MaintenanceResponse> create(@RequestBody @Valid MaintenanceRequest request) {
         MaintenanceResponse createdMaintenance = maintenanceService.create(request);

@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class VehicleController {
 
     private final VehicleService vehicleService;
 
+    @PreAuthorize("hasRole('FLEET_MANAGER')")
     @PostMapping
     public ResponseEntity<VehicleResponse> create(@RequestBody @Valid VehicleRequest request) {
         VehicleResponse createdVehicle = vehicleService.create(request);
@@ -38,12 +40,14 @@ public class VehicleController {
         return ResponseEntity.status(HttpStatus.OK).body(foundVehicle);
     }
 
+    @PreAuthorize("hasRole('FLEET_MANAGER')")
     @PutMapping("/{id}")
     public ResponseEntity<VehicleResponse> update(@PathVariable UUID id, @RequestBody @Valid VehicleRequest request) {
         VehicleResponse updatedVehicle = vehicleService.update(id, request);
         return ResponseEntity.status(HttpStatus.OK).body(updatedVehicle);
     }
 
+    @PreAuthorize("hasRole('FLEET_MANAGER')")
     @PatchMapping("/{id}/status")
     public ResponseEntity<VehicleResponse> changeStatus(@PathVariable UUID id, @RequestBody @Valid VehicleStatusRequest request) {
         VehicleResponse updatedVehicle = vehicleService.changeStatus(id, request);
@@ -51,6 +55,7 @@ public class VehicleController {
     }
 
 
+    @PreAuthorize("hasRole('FLEET_MANAGER')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         vehicleService.delete(id);
