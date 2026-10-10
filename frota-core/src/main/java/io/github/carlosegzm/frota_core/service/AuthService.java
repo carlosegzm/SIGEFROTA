@@ -7,6 +7,7 @@ import io.github.carlosegzm.frota_core.dto.request.LoginRequest;
 import io.github.carlosegzm.frota_core.dto.request.RegisterRequest;
 import io.github.carlosegzm.frota_core.dto.response.LoginResponse;
 import io.github.carlosegzm.frota_core.dto.response.UserResponse;
+import io.github.carlosegzm.frota_core.exception.custom.DuplicateResourceException;
 import io.github.carlosegzm.frota_core.mapper.UserMapper;
 import io.github.carlosegzm.frota_core.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,7 @@ public class AuthService {
     public UserResponse register(RegisterRequest request) {
 
         if (userRepository.findByEmail(request.email()).isPresent()) {
-            throw new IllegalArgumentException("Email already registered!");
+            throw new DuplicateResourceException("Email already registered!");
         }
 
         User user = UserMapper.toEntity(request);

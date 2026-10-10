@@ -5,10 +5,10 @@ import io.github.carlosegzm.frota_core.domain.entities.Vehicle;
 import io.github.carlosegzm.frota_core.domain.enums.DocumentType;
 import io.github.carlosegzm.frota_core.dto.request.DocumentRequest;
 import io.github.carlosegzm.frota_core.dto.response.DocumentResponse;
+import io.github.carlosegzm.frota_core.exception.custom.ResourceNotFoundException;
 import io.github.carlosegzm.frota_core.messaging.AuditEventPublisher;
 import io.github.carlosegzm.frota_core.repository.DocumentRepository;
 import io.github.carlosegzm.frota_core.repository.VehicleRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -80,7 +80,7 @@ class DocumentServiceTest {
 
         when(vehicleRepository.findById(request.vehicleId())).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () -> documentService.create(request));
+        assertThrows(ResourceNotFoundException.class, () -> documentService.create(request));
         verify(documentRepository, never()).save(any());
     }
 
@@ -145,7 +145,7 @@ class DocumentServiceTest {
 
         when(documentRepository.findById(id)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () -> documentService.findById(id));
+        assertThrows(ResourceNotFoundException.class, () -> documentService.findById(id));
     }
 
 

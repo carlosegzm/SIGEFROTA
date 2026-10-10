@@ -5,9 +5,10 @@ import io.github.carlosegzm.frota_core.domain.enums.VehicleStatus;
 import io.github.carlosegzm.frota_core.dto.request.VehicleRequest;
 import io.github.carlosegzm.frota_core.dto.request.VehicleStatusRequest;
 import io.github.carlosegzm.frota_core.dto.response.VehicleResponse;
+import io.github.carlosegzm.frota_core.exception.custom.DuplicateResourceException;
+import io.github.carlosegzm.frota_core.exception.custom.ResourceNotFoundException;
 import io.github.carlosegzm.frota_core.messaging.AuditEventPublisher;
 import io.github.carlosegzm.frota_core.repository.VehicleRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,7 +79,7 @@ class VehicleServiceTest {
 
         when(vehicleRepository.findByPlate(request.plate())).thenReturn(Optional.of(existingVehicle));
 
-        assertThrows(IllegalArgumentException.class, () -> vehicleService.create(request));
+        assertThrows(DuplicateResourceException.class, () -> vehicleService.create(request));
         verify(vehicleRepository, never()).save(any());
     }
 
@@ -107,7 +108,7 @@ class VehicleServiceTest {
 
         when(vehicleRepository.findById(id)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () -> vehicleService.findById(id));
+        assertThrows(ResourceNotFoundException.class, () -> vehicleService.findById(id));
     }
 
     // -> UPDATE <-

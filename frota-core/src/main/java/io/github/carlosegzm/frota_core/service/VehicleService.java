@@ -6,10 +6,11 @@ import io.github.carlosegzm.frota_core.dto.message.AuditEvent;
 import io.github.carlosegzm.frota_core.dto.request.VehicleRequest;
 import io.github.carlosegzm.frota_core.dto.request.VehicleStatusRequest;
 import io.github.carlosegzm.frota_core.dto.response.VehicleResponse;
+import io.github.carlosegzm.frota_core.exception.custom.DuplicateResourceException;
+import io.github.carlosegzm.frota_core.exception.custom.ResourceNotFoundException;
 import io.github.carlosegzm.frota_core.mapper.VehicleMapper;
 import io.github.carlosegzm.frota_core.messaging.AuditEventPublisher;
 import io.github.carlosegzm.frota_core.repository.VehicleRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +29,7 @@ public class VehicleService {
     @Transactional
     public VehicleResponse create(VehicleRequest request) {
         if (vehicleRepository.findByPlate(request.plate()).isPresent()) {
-            throw new IllegalArgumentException("Vehicle with this license plate already exists.");
+            throw new DuplicateResourceException("Vehicle with this license plate already exists.");
         }
 
         Vehicle vehicle = VehicleMapper.toEntity(request);
@@ -55,7 +56,7 @@ public class VehicleService {
 
     public VehicleResponse findById(UUID id) {
         Vehicle vehicle = vehicleRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Vehicle not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with ID: " + id));
 
         return VehicleMapper.toResponse(vehicle);
     }
@@ -63,10 +64,10 @@ public class VehicleService {
     @Transactional
     public VehicleResponse update(UUID id, VehicleRequest request) {
         Vehicle vehicle = vehicleRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Vehicle not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with ID: " + id));
 
         if (!vehicle.getPlate().equals(request.plate()) && vehicleRepository.findByPlate(request.plate()).isPresent()) {
-            throw new IllegalArgumentException("Vehicle with this plate already exists.");
+            throw new DuplicateResourceException("Vehicle with this plate already exists.");
         }
 
         vehicle.setPlate(request.plate());
@@ -90,7 +91,7 @@ public class VehicleService {
     @Transactional
     public VehicleResponse changeStatus(UUID id, VehicleStatusRequest request) {
         Vehicle vehicle = vehicleRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Vehicle not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with ID: " + id));
 
         vehicle.setStatus(request.status());
         Vehicle updatedVehicle = vehicleRepository.save(vehicle);
@@ -109,7 +110,7 @@ public class VehicleService {
     @Transactional
     public void delete(UUID id) {
         Vehicle vehicle = vehicleRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Vehicle not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with ID: " + id));
 
         vehicle.setStatus(VehicleStatus.INACTIVE);
 

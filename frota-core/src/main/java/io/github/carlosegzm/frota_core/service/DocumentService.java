@@ -5,11 +5,11 @@ import io.github.carlosegzm.frota_core.domain.entities.Vehicle;
 import io.github.carlosegzm.frota_core.dto.message.AuditEvent;
 import io.github.carlosegzm.frota_core.dto.request.DocumentRequest;
 import io.github.carlosegzm.frota_core.dto.response.DocumentResponse;
+import io.github.carlosegzm.frota_core.exception.custom.ResourceNotFoundException;
 import io.github.carlosegzm.frota_core.mapper.DocumentMapper;
 import io.github.carlosegzm.frota_core.messaging.AuditEventPublisher;
 import io.github.carlosegzm.frota_core.repository.DocumentRepository;
 import io.github.carlosegzm.frota_core.repository.VehicleRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +30,7 @@ public class DocumentService {
     public DocumentResponse create(DocumentRequest request) {
 
         Vehicle vehicle = vehicleRepository.findById(request.vehicleId())
-                .orElseThrow(() -> new EntityNotFoundException("Vehicle not found with ID: " + request.vehicleId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with ID: " + request.vehicleId()));
 
         Document document = DocumentMapper.toEntity(request);
         document.setVehicle(vehicle);
@@ -56,7 +56,7 @@ public class DocumentService {
 
     public DocumentResponse findById(UUID id) {
         Document document = documentRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Document not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Document not found with ID: " + id));
 
         return DocumentMapper.toResponse(document);
     }

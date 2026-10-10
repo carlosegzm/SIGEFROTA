@@ -4,10 +4,11 @@ import io.github.carlosegzm.frota_core.domain.entities.Driver;
 import io.github.carlosegzm.frota_core.dto.message.AuditEvent;
 import io.github.carlosegzm.frota_core.dto.request.DriverRequest;
 import io.github.carlosegzm.frota_core.dto.response.DriverResponse;
+import io.github.carlosegzm.frota_core.exception.custom.DuplicateResourceException;
+import io.github.carlosegzm.frota_core.exception.custom.ResourceNotFoundException;
 import io.github.carlosegzm.frota_core.mapper.DriverMapper;
 import io.github.carlosegzm.frota_core.messaging.AuditEventPublisher;
 import io.github.carlosegzm.frota_core.repository.DriverRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +28,7 @@ public class DriverService {
     public DriverResponse create(DriverRequest request) {
 
         if (driverRepository.findByLicenseNumber(request.licenseNumber()).isPresent()) {
-            throw new IllegalArgumentException("Driver with this license number already exists.");
+            throw new DuplicateResourceException("Driver with this license number already exists.");
         }
 
         Driver driver = DriverMapper.toEntity(request);
@@ -54,7 +55,7 @@ public class DriverService {
 
     public DriverResponse findById(UUID id) {
         Driver driver = driverRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Driver not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with ID: " + id));
 
         return DriverMapper.toResponse(driver);
     }
@@ -63,10 +64,10 @@ public class DriverService {
     @Transactional
     public DriverResponse update(UUID id, DriverRequest request) {
         Driver driver = driverRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Driver not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with ID: " + id));
 
         if (!driver.getLicenseNumber().equals(request.licenseNumber()) && driverRepository.findByLicenseNumber(request.licenseNumber()).isPresent()) {
-            throw new IllegalArgumentException("Driver with this license number already exists.");
+            throw new DuplicateResourceException("Driver with this license number already exists.");
         }
 
         driver.setName(request.name());
@@ -90,13 +91,13 @@ public class DriverService {
     @Transactional
     public void delete(UUID id) {
         Driver driver = driverRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Driver not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with ID: " + id));
 
         driver.setActive(false);
 
         auditEventPublisher.publish(new AuditEvent(
                 driver.getId(),
-                "VEHICLE",
+                "DRIVER",
                 "INACTIVATED",
                 Instant.now()
         ));

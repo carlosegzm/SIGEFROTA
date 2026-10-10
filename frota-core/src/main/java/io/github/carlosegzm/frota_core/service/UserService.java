@@ -3,9 +3,9 @@ package io.github.carlosegzm.frota_core.service;
 import io.github.carlosegzm.frota_core.domain.entities.User;
 import io.github.carlosegzm.frota_core.dto.request.UserRoleRequest;
 import io.github.carlosegzm.frota_core.dto.response.UserResponse;
+import io.github.carlosegzm.frota_core.exception.custom.ResourceNotFoundException;
 import io.github.carlosegzm.frota_core.mapper.UserMapper;
 import io.github.carlosegzm.frota_core.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +28,7 @@ public class UserService {
     @Transactional
     public UserResponse changeRole(UUID id, UserRoleRequest request) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + id));
 
         user.setRole(request.role());
         User updatedUser = userRepository.save(user);
