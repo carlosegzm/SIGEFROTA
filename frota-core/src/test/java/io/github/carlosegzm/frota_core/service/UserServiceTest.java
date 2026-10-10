@@ -4,8 +4,8 @@ import io.github.carlosegzm.frota_core.domain.entities.User;
 import io.github.carlosegzm.frota_core.domain.enums.UserRole;
 import io.github.carlosegzm.frota_core.dto.request.UserRoleRequest;
 import io.github.carlosegzm.frota_core.dto.response.UserResponse;
+import io.github.carlosegzm.frota_core.exception.custom.ResourceNotFoundException;
 import io.github.carlosegzm.frota_core.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,7 +62,7 @@ class UserServiceTest {
 
         when(userRepository.findById(id)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () -> userService.changeRole(id, request));
+        assertThrows(ResourceNotFoundException.class, () -> userService.changeRole(id, request));
         verify(userRepository, never()).save(any());
     }
 

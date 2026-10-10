@@ -3,9 +3,10 @@ package io.github.carlosegzm.frota_core.service;
 import io.github.carlosegzm.frota_core.domain.entities.Driver;
 import io.github.carlosegzm.frota_core.dto.request.DriverRequest;
 import io.github.carlosegzm.frota_core.dto.response.DriverResponse;
+import io.github.carlosegzm.frota_core.exception.custom.DuplicateResourceException;
+import io.github.carlosegzm.frota_core.exception.custom.ResourceNotFoundException;
 import io.github.carlosegzm.frota_core.messaging.AuditEventPublisher;
 import io.github.carlosegzm.frota_core.repository.DriverRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,7 +77,7 @@ class DriverServiceTest {
 
         when(driverRepository.findByLicenseNumber(request.licenseNumber())).thenReturn(Optional.of(existingDriver));
 
-        assertThrows(IllegalArgumentException.class, () -> driverService.create(request));
+        assertThrows(DuplicateResourceException.class, () -> driverService.create(request));
         verify(driverRepository, never()).save(any());
     }
 
@@ -107,7 +108,7 @@ class DriverServiceTest {
 
         when(driverRepository.findById(id)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () -> driverService.findById(id));
+        assertThrows(ResourceNotFoundException.class, () -> driverService.findById(id));
     }
 
     // -> UPDATE <-

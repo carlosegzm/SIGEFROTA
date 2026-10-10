@@ -5,11 +5,12 @@ import io.github.carlosegzm.frota_core.domain.entities.Vehicle;
 import io.github.carlosegzm.frota_core.dto.message.AuditEvent;
 import io.github.carlosegzm.frota_core.dto.request.MaintenanceRequest;
 import io.github.carlosegzm.frota_core.dto.response.MaintenanceResponse;
+import io.github.carlosegzm.frota_core.exception.custom.BusinessRuleException;
+import io.github.carlosegzm.frota_core.exception.custom.ResourceNotFoundException;
 import io.github.carlosegzm.frota_core.mapper.MaintenanceMapper;
 import io.github.carlosegzm.frota_core.messaging.AuditEventPublisher;
 import io.github.carlosegzm.frota_core.repository.MaintenanceRepository;
 import io.github.carlosegzm.frota_core.repository.VehicleRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -40,11 +41,11 @@ public class MaintenanceService {
             boolean acquired = lock.tryLock(5, 10, TimeUnit.SECONDS);
 
             if (!acquired) {
-                throw new IllegalStateException("This vehicle is currently being processed. Try again shortly");
+                throw new BusinessRuleException("This vehicle is currently being processed. Try again shortly");
             }
 
             Vehicle vehicle = vehicleRepository.findById(request.vehicleId())
-                    .orElseThrow(() -> new EntityNotFoundException("Vehicle not found with ID:" + request.vehicleId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with ID:" + request.vehicleId()));
 
             Maintenance maintenance = MaintenanceMapper.toEntity(request);
             maintenance.setVehicle(vehicle);
@@ -82,7 +83,7 @@ public class MaintenanceService {
 
     public MaintenanceResponse findById(UUID id) {
         Maintenance maintenance = maintenanceRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Maintenance not found with ID:" + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Maintenance not found with ID:" + id));
 
         return MaintenanceMapper.toResponse(maintenance);
     }

@@ -4,11 +4,12 @@ import io.github.carlosegzm.frota_core.domain.entities.Fuel;
 import io.github.carlosegzm.frota_core.domain.entities.Vehicle;
 import io.github.carlosegzm.frota_core.dto.request.FuelRequest;
 import io.github.carlosegzm.frota_core.dto.response.FuelResponse;
+import io.github.carlosegzm.frota_core.exception.custom.BusinessRuleException;
+import io.github.carlosegzm.frota_core.exception.custom.ResourceNotFoundException;
 import io.github.carlosegzm.frota_core.messaging.AuditEventPublisher;
 import io.github.carlosegzm.frota_core.messaging.ExpirationAlertPublisher;
 import io.github.carlosegzm.frota_core.repository.FuelRepository;
 import io.github.carlosegzm.frota_core.repository.VehicleRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -86,7 +87,7 @@ class FuelServiceTest {
 
         when(vehicleRepository.findById(request.vehicleId())).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () -> fuelService.create(request));
+        assertThrows(ResourceNotFoundException.class, () -> fuelService.create(request));
         verify(fuelRepository, never()).save(any());
     }
 
@@ -170,7 +171,7 @@ class FuelServiceTest {
         when(vehicleRepository.findById(request.vehicleId())).thenReturn(Optional.of(vehicle));
         when(fuelRepository.findTopByVehicleIdOrderByRefueledAtDesc(request.vehicleId())).thenReturn(Optional.of(oldFuel));
 
-        assertThrows(IllegalArgumentException.class, () -> fuelService.create(request));
+        assertThrows(BusinessRuleException.class, () -> fuelService.create(request));
         verify(fuelRepository, never()).save(any());
     }
 
@@ -341,7 +342,7 @@ class FuelServiceTest {
 
         when(fuelRepository.findById(id)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () -> fuelService.findById(id));
+        assertThrows(ResourceNotFoundException.class, () -> fuelService.findById(id));
     }
 
 

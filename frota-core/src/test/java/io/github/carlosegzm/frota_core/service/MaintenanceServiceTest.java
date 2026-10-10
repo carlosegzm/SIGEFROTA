@@ -5,10 +5,10 @@ import io.github.carlosegzm.frota_core.domain.entities.Vehicle;
 import io.github.carlosegzm.frota_core.domain.enums.MaintenanceType;
 import io.github.carlosegzm.frota_core.dto.request.MaintenanceRequest;
 import io.github.carlosegzm.frota_core.dto.response.MaintenanceResponse;
+import io.github.carlosegzm.frota_core.exception.custom.ResourceNotFoundException;
 import io.github.carlosegzm.frota_core.messaging.AuditEventPublisher;
 import io.github.carlosegzm.frota_core.repository.MaintenanceRepository;
 import io.github.carlosegzm.frota_core.repository.VehicleRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -93,7 +93,7 @@ class MaintenanceServiceTest {
         when(rLock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
         when(vehicleRepository.findById(request.vehicleId())).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () -> maintenanceService.create(request));
+        assertThrows(ResourceNotFoundException.class, () -> maintenanceService.create(request));
 
         verify(maintenanceRepository, never()).save(any());
     }
@@ -160,7 +160,7 @@ class MaintenanceServiceTest {
 
         when(maintenanceRepository.findById(id)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () -> maintenanceService.findById(id));
+        assertThrows(ResourceNotFoundException.class, () -> maintenanceService.findById(id));
     }
 
 }

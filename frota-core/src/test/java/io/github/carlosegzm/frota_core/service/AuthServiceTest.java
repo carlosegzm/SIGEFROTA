@@ -7,6 +7,7 @@ import io.github.carlosegzm.frota_core.dto.request.LoginRequest;
 import io.github.carlosegzm.frota_core.dto.request.RegisterRequest;
 import io.github.carlosegzm.frota_core.dto.response.LoginResponse;
 import io.github.carlosegzm.frota_core.dto.response.UserResponse;
+import io.github.carlosegzm.frota_core.exception.custom.DuplicateResourceException;
 import io.github.carlosegzm.frota_core.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -77,7 +78,7 @@ class AuthServiceTest {
 
         when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(existingUser));
 
-        assertThrows(IllegalArgumentException.class, () -> authService.register(request));
+        assertThrows(DuplicateResourceException.class, () -> authService.register(request));
         verify(userRepository, never()).save(any());
     }
 
