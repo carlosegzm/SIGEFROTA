@@ -26,6 +26,7 @@ public class JwtService {
             return JWT.create()
                     .withIssuer("sigefrota")
                     .withSubject(user.getEmail())
+                    .withClaim("role", user.getRole().name())
                     .withExpiresAt(generateExpirationDate())
                     .sign(algorithm);
         } catch (JWTCreationException exception) {
