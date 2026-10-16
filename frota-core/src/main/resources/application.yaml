@@ -6,6 +6,7 @@ spring:
     name: sigefrota-core
 
   cache:
+    type: redis
     redis:
       time-to-live: 600000
 
