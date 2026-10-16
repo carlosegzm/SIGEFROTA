@@ -77,6 +77,11 @@ public class FuelService {
         fuel.setAnomalousConsumption(anomalousConsumption);
         Fuel savedFuel = fuelRepository.save(fuel);
 
+        if (vehicle.getCurrentKm() == null || request.odometerKm() > vehicle.getCurrentKm()) {
+            vehicle.setCurrentKm(request.odometerKm());
+            vehicleRepository.save(vehicle);
+        }
+
         if (Boolean.TRUE.equals(anomalousConsumption)) {
             ExpirationAlertMessage alertMessage = new ExpirationAlertMessage(
                     vehicle.getId(),
