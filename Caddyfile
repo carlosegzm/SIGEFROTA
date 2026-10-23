@@ -1,0 +1,7 @@
+sigefrota.duckdns.org {
+    reverse_proxy frontend:80
+}
+
+api-sigefrota.duckdns.org {
+    reverse_proxy frota-core:8080
+}
