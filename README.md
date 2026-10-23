@@ -11,8 +11,8 @@ Manage vehicles, drivers, maintenance, documents and fuel consumption, with auto
 
 <br>
 
-[![Live Demo](https://img.shields.io/badge/Live_Demo-18.118.14.211-2ea44f?style=for-the-badge&logo=amazonaws&logoColor=white)](http://18.118.14.211)
-[![API Docs](https://img.shields.io/badge/API_Docs-Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)](http://18.118.14.211:8080/swagger-ui/index.html)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-sigefrota.duckdns.org-2ea44f?style=for-the-badge&logo=amazonaws&logoColor=white)](https://sigefrota.duckdns.org)
+[![API Docs](https://img.shields.io/badge/API_Docs-Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)](https://api-sigefrota.duckdns.org/swagger-ui/index.html)
 
 <br>
 
@@ -108,7 +108,7 @@ It is split into two Spring Boot services and a React frontend, communicating th
 | **Documents** | CRLV, insurance and licensing with expiration dates and an "expires soon" status |
 | **Fuel** | Consumption (km/L) calculated on every refuel, cached average of recent refuels, anomaly detection when a refuel deviates more than 20% from the average |
 | **Alerts** | A daily job (08:00) finds maintenance and documents due within 30 days. Alerts are published to RabbitMQ and sent by e-mail by a separate notification service |
-| **Audit trail** | Every create operation publishes an audit event to Kafka |
+| **Audit trail** | Vehicle, driver, document, maintenance and fuel operations publish audit events to Kafka |
 | **Security** | Stateless JWT authentication and role-based access |
 | **Web interface** | React single-page app with role-aware UI and translated error messages |
 | **Quality** | Unit and integration tests (including RabbitMQ and Kafka) running on GitHub Actions |
@@ -134,6 +134,7 @@ It is split into two Spring Boot services and a React frontend, communicating th
 ```mermaid
 flowchart LR
     User([Browser])
+    Proxy[Caddy<br/>HTTPS]
     FE[frontend<br/>React + nginx]
     Core[frota-core<br/>Spring Boot]
     Notif[frota-notification<br/>Spring Boot]
@@ -143,8 +144,9 @@ flowchart LR
     Kafka{{Kafka}}
     Mail[SMTP<br/>MailHog]
 
-    User -->|static files| FE
-    User -->|REST + JWT| Core
+    User -->|HTTPS| Proxy
+    Proxy -->|static files| FE
+    Proxy -->|REST + JWT| Core
     Core --> PG
     Core -->|cache + lock| Redis
     Core -->|alerts| RMQ
@@ -158,6 +160,7 @@ flowchart LR
 | **`frota-core`** | REST API, business rules, authentication, persistence, scheduled job and event publishing |
 | **`frota-notification`** | Consumes alerts from RabbitMQ and sends e-mail notifications |
 | **`frontend`** | React SPA served by nginx |
+| **`caddy`** | Reverse proxy in production, with automatic HTTPS certificates (Let's Encrypt) |
 
 The full diagram, the main data flows and the reasoning behind each decision are in **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
 
@@ -221,7 +224,7 @@ The production setup runs on a single AWS EC2 instance (t3.small, 2 GiB RAM plus
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-This file is a leaner version of the local stack: no Prometheus or Grafana, JVM heap limits for each service, and only the frontend (port 80) and the API (port 8080) exposed. Databases, brokers and the actuator port stay private. The production `.env` also needs `CORS_ALLOWED_ORIGINS` and `VITE_API_URL`.
+This file is a leaner version of the local stack: no Prometheus or Grafana, JVM heap limits for each service, and a Caddy reverse proxy as the only public entry point (ports 80 and 443), serving the frontend and the API on two DuckDNS subdomains with automatic HTTPS. Databases, brokers and the actuator port stay private. The production `.env` also needs `CORS_ALLOWED_ORIGINS` and `VITE_API_URL`, and the domains are set in the `Caddyfile`.
 
 More details in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#deployment).
 
@@ -229,8 +232,8 @@ More details in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#deployment).
 
 ## Known limitations
 
-- The demo runs over plain HTTP, with no domain or TLS certificate.
-- The public IP is not fixed. Stopping the instance changes it and requires rebuilding the frontend (rebooting is safe).
+- The public IP is not fixed. Stopping the instance changes it, and the DuckDNS records must be updated (rebooting is safe).
+- The demo uses a free DuckDNS subdomain instead of a custom domain.
 - Role changes only take effect after the user logs in again, because the role is inside the JWT.
 - The first `FLEET_MANAGER` is created manually in the database.
 - The daily expiration job has no distributed lock, so running several instances of `frota-core` would send duplicate alerts.
@@ -244,7 +247,8 @@ More details in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#deployment).
 - [ ] Trip management (CRUD)
 - [ ] Lock for the scheduled job (for example with ShedLock), to allow several instances
 - [ ] Kafka consumer for the audit events
-- [ ] HTTPS with a custom domain
+- [x] HTTPS with automatic certificates (Caddy and DuckDNS)
+- [ ] Custom domain
 - [ ] Kubernetes (Minikube) deployment phase
 - [ ] Frontend code splitting
 
@@ -255,5 +259,4 @@ More details in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#deployment).
 **Carlos Eduardo Garcez Mattos**
 Computer Science student at IFSC, Lages, SC, Brazil.
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-carlosegzm-0A66C2?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/carlosegzm/)
 [![GitHub](https://img.shields.io/badge/GitHub-carlosegzm-181717?logo=github&logoColor=white)](https://github.com/carlosegzm)
