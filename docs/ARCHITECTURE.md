@@ -20,6 +20,7 @@ This document explains how SIGEFROTA is organized, how data flows through it and
 ```mermaid
 flowchart LR
     User([Browser])
+    Proxy[Caddy<br/>HTTPS :443]
     FE[frontend<br/>React + nginx :80]
     Core[frota-core<br/>Spring Boot :8080]
     Notif[frota-notification<br/>Spring Boot :8081]
@@ -29,8 +30,9 @@ flowchart LR
     Kafka{{Kafka<br/>audit.events}}
     Mail[SMTP<br/>MailHog]
 
-    User -->|static files| FE
-    User -->|REST + JWT| Core
+    User -->|HTTPS| Proxy
+    Proxy -->|static files| FE
+    Proxy -->|REST + JWT| Core
     Core --> PG
     Core -->|cache + lock| Redis
     Core -->|alerts.expiration| RMQ
@@ -40,7 +42,7 @@ flowchart LR
 ```
 
 > [!NOTE]
-> The browser loads the static frontend from nginx and then calls the API directly. The API URL is defined at build time (`VITE_API_URL`).
+> In production, Caddy is the only public entry point. It serves the frontend on `sigefrota.duckdns.org` and the API on `api-sigefrota.duckdns.org`. The browser loads the static frontend and then calls the API directly. The API URL is defined at build time (`VITE_API_URL`).
 
 ---
 
@@ -48,8 +50,9 @@ flowchart LR
 
 | Service | Responsibility | Port |
 |---|---|---|
-| **`frontend`** | React SPA served by nginx with SPA fallback | 80 (5173 locally) |
-| **`frota-core`** | REST API, business rules, authentication, persistence, scheduled job, event publishing | 8080 (actuator on 8082, not published) |
+| **`caddy`** | Reverse proxy with automatic HTTPS (production only) | 80, 443 |
+| **`frontend`** | React SPA served by nginx with SPA fallback | 80 inside the network (5173 locally) |
+| **`frota-core`** | REST API, business rules, authentication, persistence, scheduled job, event publishing | 8080 inside the network (actuator on 8082, not published) |
 | **`frota-notification`** | Consumes alerts from RabbitMQ and sends them by e-mail | 8081 |
 
 **Infrastructure:** PostgreSQL, Redis, RabbitMQ, Kafka (single node, KRaft mode) and MailHog. The local stack also runs Prometheus and Grafana.
@@ -124,12 +127,14 @@ Today the system only produces these events. Consumers can be added later (for e
 | **Stateless JWT** | No server-side session, so the API scales horizontally and the frontend only needs to send the token. |
 | **Roles `FLEET_MANAGER`, `FINANCE`, `DRIVER`** | Writes are limited to managers. The other roles are read-only. |
 | **Flyway with `ddl-auto: validate`** | The schema is versioned in migrations and Hibernate never changes it. |
+| **Caddy as reverse proxy** | Obtains and renews Let's Encrypt certificates by itself, so the API and frontend are served over HTTPS with a small configuration file and no extra cost. |
 | **Docker Compose for production** | The target is a single small instance. Compose keeps the deployment reproducible without the cost of an orchestrator. |
 
 ---
 
 ## Security
 
+- HTTPS for the frontend and the API, with certificates issued and renewed automatically by Caddy.
 - Stateless JWT authentication, secret provided by environment variable.
 - Role-based authorization: write endpoints require `FLEET_MANAGER`, and user and role management too.
 - Public endpoints are only login, registration and the API documentation.
@@ -154,9 +159,9 @@ The system runs on one AWS EC2 instance (t3.small, 2 GiB RAM) using `docker-comp
 | Topic | Setup |
 |---|---|
 | **Memory** | A 2 GiB swap file and JVM heap limits per service (`-Xmx320m` for `frota-core`, `-Xmx256m` for `frota-notification`) keep all containers running on 2 GiB |
-| **Network** | The security group allows SSH only from the maintainer's IP, HTTP (80) for the frontend and TCP 8080 for the API |
+| **Network** | The security group allows SSH only from the maintainer's IP, and HTTP (80) and HTTPS (443) for Caddy. The API and frontend ports are not published, so all traffic goes through the proxy |
 | **Kafka** | Internal and controller listeners, with replication factors set to 1 for a single node |
-| **Cost** | The project runs inside the AWS Free plan credits. The public IP is not an Elastic IP, to avoid extra charges |
+| **Cost** | The project runs inside the AWS Free plan credits. The public IP is not an Elastic IP, to avoid extra charges. If the instance is stopped, the IP changes and the DuckDNS records must be updated |
 | **CI** | GitHub Actions runs the tests of both services and the lint and build of the frontend on every pull request |
 
 ---
